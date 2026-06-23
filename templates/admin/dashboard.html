@@ -32,32 +32,39 @@
             
             <!-- Summary Metric Cards -->
             <div class="row g-4 mb-5">
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4 col-lg">
                     <div class="card admin-metric-card bg-metric-blue">
                         <div class="fs-4"><i class="bi bi-people-fill"></i></div>
                         <h3 class="fw-bold mb-1">{{ metrics.total_users }}</h3>
                         <span class="small text-white-50 uppercase">Total Users</span>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4 col-lg">
                     <div class="card admin-metric-card bg-metric-purple">
                         <div class="fs-4"><i class="bi bi-grid-fill"></i></div>
                         <h3 class="fw-bold mb-1">{{ metrics.total_services }}</h3>
                         <span class="small text-white-50 uppercase">Active Services</span>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4 col-lg">
                     <div class="card admin-metric-card bg-metric-emerald">
                         <div class="fs-4"><i class="bi bi-chat-left-text-fill"></i></div>
                         <h3 class="fw-bold mb-1">{{ metrics.total_reviews }}</h3>
                         <span class="small text-white-50 uppercase">Total Reviews</span>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4 col-lg">
                     <div class="card admin-metric-card bg-metric-rose">
                         <div class="fs-4"><i class="bi bi-wallet2"></i></div>
                         <h3 class="fw-bold mb-1">{{ metrics.total_orders }}</h3>
                         <span class="small text-white-50 uppercase">Total Orders</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg">
+                    <div class="card admin-metric-card bg-dark border border-danger">
+                        <div class="fs-4 text-danger"><i class="bi bi-shield-lock-fill"></i></div>
+                        <h3 class="fw-bold text-danger mb-1">{{ metrics.total_alerts }}</h3>
+                        <span class="small text-danger uppercase">WAF Blocks</span>
                     </div>
                 </div>
             </div>
@@ -65,7 +72,7 @@
             <!-- Charts Section -->
             <h4 class="fw-bold text-dark mb-4"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Real-time Data Analytics</h4>
             
-            <div class="row g-4">
+            <div class="row g-4 mb-5">
                 <!-- User & Service Growth -->
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
@@ -99,6 +106,55 @@
                         <canvas id="topSellersChart"></canvas>
                     </div>
                 </div>
+            </div>
+
+            <!-- Firewall WAF Alert Log -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-shield-fill-check text-danger me-2"></i>Live Web Application Firewall (WAF) Monitor
+                    </h5>
+                    <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-broadcast me-1"></i>Shield Active</span>
+                </div>
+                
+                {% if recent_alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>IP Address</th>
+                                    <th>Method & Path</th>
+                                    <th>Threat Category</th>
+                                    <th>Trigger Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in recent_alerts %}
+                                    <tr>
+                                        <td class="text-muted" style="font-size: 0.75rem;">{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td><span class="badge bg-secondary">{{ alert.ip_address }}</span></td>
+                                        <td>
+                                            <span class="badge bg-light text-dark me-1" style="font-size: 0.65rem;">{{ alert.method }}</span>
+                                            <code>{{ alert.path }}</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem;">{{ alert.threat_type }}</span>
+                                        </td>
+                                        <td>
+                                            <code class="text-wrap text-danger" style="font-size: 0.7rem; word-break: break-all;">{{ alert.payload }}</code>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-success fs-1 mb-2"><i class="bi bi-shield-fill-check"></i></div>
+                        <p class="text-muted mb-0 small">No threat alerts logged. The marketplace is secure.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

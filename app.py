@@ -27,6 +27,10 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'info'
 
+    # Initialize Web Application Firewall (WAF)
+    from utils.firewall import init_waf
+    init_waf(app)
+
     # User loader
     @login_manager.user_loader
     def load_user(user_id):

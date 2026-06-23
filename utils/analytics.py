@@ -65,9 +65,11 @@ def get_top_rated_sellers(limit=5):
 
 def get_admin_metrics():
     """Returns count metrics for the dashboard summary cards."""
+    from database import SecurityAlert
     return {
         'total_users': User.query.count(),
         'total_services': Service.query.count(),
         'total_reviews': Review.query.count(),
-        'total_orders': Order.query.count()
+        'total_orders': Order.query.count(),
+        'total_alerts': SecurityAlert.query.count()
     }

@@ -2,7 +2,7 @@ import os
 import json
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
-from database import db, User, Service, Review, Order
+from database import db, User, Service, Review, Order, SecurityAlert
 from utils.decorators import admin_required
 from utils.analytics import (
     get_admin_metrics,
@@ -30,6 +30,9 @@ def dashboard():
     status_data = get_order_status_distribution()
     pop_services = get_most_popular_services()
     top_sellers = get_top_rated_sellers()
+    
+    # Fetch recent security alerts blocked by WAF
+    recent_alerts = SecurityAlert.query.order_by(SecurityAlert.created_at.desc()).limit(10).all()
     
     # Prepare JSON serializable structures for Chart.js
     charts_json = {
@@ -62,7 +65,8 @@ def dashboard():
     return render_template(
         'admin/dashboard.html',
         metrics=metrics,
-        charts_data=json.dumps(charts_json)
+        charts_data=json.dumps(charts_json),
+        recent_alerts=recent_alerts
     )
 
 @admin_bp.route('/users')

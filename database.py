@@ -136,3 +136,18 @@ class SessionRoom(db.Model):
     
     def __repr__(self):
         return f"<SessionRoom {self.id} for Order {self.order_id} Active: {self.is_active}>"
+
+
+class SecurityAlert(db.Model):
+    __tablename__ = 'security_alerts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False)
+    path = db.Column(db.String(255), nullable=False)
+    method = db.Column(db.String(10), nullable=False)
+    threat_type = db.Column(db.String(50), nullable=False) # e.g. SQL Injection, XSS, Path Traversal
+    payload = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<SecurityAlert {self.threat_type} from {self.ip_address} on {self.path}>"
