@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+
+{% block title %}Study Package - Broke Geniuses{% endblock %}
+
+{% block extra_css %}
+<style>
+    .paywall-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+    }
+    .blur-text-line {
+        height: 16px;
+        background-color: #e2e8f0;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        filter: blur(5px);
+        opacity: 0.6;
+    }
+    .blur-text-line.short { width: 40%; }
+    .blur-text-line.medium { width: 75%; }
+    .blur-text-line.long { width: 95%; }
+    
+    .paywall-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.95) 85%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        z-index: 50;
+    }
+    .quiz-option-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+    .quiz-option-card:hover {
+        border-color: var(--primary-color);
+        background-color: rgba(37, 99, 235, 0.03);
+    }
+    .quiz-option-card.correct {
+        border-color: #10b981;
+        background-color: rgba(16, 185, 129, 0.08);
+        color: #065f46;
+    }
+    .quiz-option-card.incorrect {
+        border-color: #ef4444;
+        background-color: rgba(239, 68, 68, 0.08);
+        color: #991b1b;
+    }
+    .premium-lock-badge {
+        font-size: 3rem;
+        color: var(--primary-color);
+        animation: lockFloat 3s infinite ease-in-out;
+    }
+    @keyframes lockFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    .glass-tab-link {
+        border-radius: 50px !important;
+        font-weight: 600;
+        padding: 8px 20px !important;
+        transition: all 0.2s ease;
+    }
+    .glass-tab-link.active {
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade-in">
+    <!-- Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 bg-white p-4 rounded-4 shadow-sm border">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <i class="bi bi-journal-richtext text-primary me-2"></i>AI Lecture Materials
+            </h2>
+            <p class="text-muted mb-0 small">
+                Order #{{ order.id }} &bull; <strong>{{ order.service.title }}</strong> &bull; Seller: @{{ order.seller_user.username }}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('profile.view_profile') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Locked Paywall View -->
+    {% if show_locked %}
+        <div class="card border-0 shadow-lg p-5 paywall-wrapper bg-white">
+            <!-- Simulated Blurry Mock Content -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="blur-text-line long"></div>
+                    <div class="blur-text-line medium"></div>
+                    <div class="blur-text-line short"></div>
+                    <div class="blur-text-line long" style="margin-top: 2rem;"></div>
+                    <div class="blur-text-line medium"></div>
+                    <div class="blur-text-line long"></div>
+                    <div class="blur-text-line short"></div>
+                </div>
+                <div class="col-md-4 d-none d-md-block">
+                    <div class="border rounded-4 p-4 text-center bg-light">
+                        <div class="blur-text-line medium mx-auto"></div>
+                        <div class="blur-text-line short mx-auto" style="margin-bottom: 2rem;"></div>
+                        <div class="blur-text-line long mx-auto"></div>
+                        <div class="blur-text-line medium mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Absolute Lock Overlay -->
+            <div class="paywall-overlay text-center">
+                <div class="premium-lock-badge mb-3">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-2">Unlock Premium Study Package</h3>
+                <p class="text-secondary small max-w-lg mx-auto mb-4" style="max-width: 500px;">
+                    Our AI Study Assistant has parsed your lesson transcript and generated tailored study aids to boost your revision:
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3 mb-4 text-start" style="max-width: 600px;">
+                    <div class="bg-light p-3 rounded-4 border d-flex align-items-center gap-3 w-100" style="flex: 1 1 250px;">
+                        <i class="bi bi-file-earmark-text-fill text-primary fs-3"></i>
+                        <div>
+                            <div class="fw-bold text-dark small">Detailed Summary Sheet</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Bullet points of core topics.</div>
+                        </div>
+                    </div>
+                    <div class="bg-light p-3 rounded-4 border d-flex align-items-center gap-3 w-100" style="flex: 1 1 250px;">
+                        <i class="bi bi-question-circle-fill text-warning fs-3"></i>
+                        <div>
+                            <div class="fw-bold text-dark small">Interactive Revision Quiz</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">MCQ questions on the lesson.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-primary-subtle border border-primary-subtle rounded-4 mb-4" style="max-width: 450px;">
+                    <h5 class="fw-bold text-primary mb-1">Flat Unlock Price: ₹100.00</h5>
+                    <div class="text-muted small">One-time purchase, accessible forever.</div>
+                </div>
+
+                <button class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow" id="btn-direct-unlock">
+                    <span class="spinner-border spinner-border-sm me-1" id="unlock-spinner" style="display: none;" role="status" aria-hidden="true"></span>
+                    <i class="bi bi-unlock-fill me-2" id="unlock-icon"></i>Unlock Study Package (Free Demo)
+                </button>
+            </div>
+        </div>
+
+    <!-- Unlocked Material Dashboard -->
+    {% else %}
+        <!-- Alert -->
+        {% if session_room.consent_given %}
+            <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 d-flex align-items-start gap-3 mb-4 animate-fade-in" role="alert">
+                <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Study Materials Unlocked!</h5>
+                    <p class="mb-0 small">The AI has analyzed your transcription logs and built custom study guides. Navigate the tabs below to play the quiz or study the guides.</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 d-flex align-items-start gap-3 mb-4 animate-fade-in" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Consent was not granted</h5>
+                    <p class="mb-0 small">AI monitoring consent was not enabled during the live session, so no automated study materials were generated. However, you can access files shared below.</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="row g-4">
+            <!-- Tabs Menu -->
+            <div class="col-12">
+                <ul class="nav nav-pills gap-2 bg-white p-2 rounded-pill shadow-sm border justify-content-center" id="packageTabs" role="tablist">
+                    {% if session_room.consent_given %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link glass-tab-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-pane" type="button" role="tab" aria-controls="summary-pane" aria-selected="true">
+                                <i class="bi bi-file-text-fill me-2"></i>Lecture Summary
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link glass-tab-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz-pane" type="button" role="tab" aria-controls="quiz-pane" aria-selected="false">
+                                <i class="bi bi-patch-question-fill me-2"></i>Revision Quiz
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link glass-tab-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-pane" type="button" role="tab" aria-controls="notes-pane" aria-selected="false">
+                                <i class="bi bi-file-earmark-code-fill me-2"></i>Lecture Notes
+                            </button>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link glass-tab-link {% if not session_room.consent_given %}active{% endif %}" id="files-tab" data-bs-toggle="tab" data-bs-target="#files-pane" type="button" role="tab" aria-controls="files-pane" aria-selected="{% if not session_room.consent_given %}true{% else %}false{% endif %}">
+                            <i class="bi bi-cloud-download-fill me-2"></i>Classroom Files ({{ shared_files|length }})
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tabs Content -->
+            <div class="col-12">
+                <div class="tab-content" id="packageTabsContent">
+                    
+                    {% if session_room.consent_given %}
+                        <!-- Tab 1: Lecture Summary -->
+                        <div class="tab-pane fade show active" id="summary-pane" role="tabpanel" aria-labelledby="summary-tab">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                                <div class="markdown-body">
+                                    {{ session_room.summary | replace('\n', '<br>') | safe }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Revision Quiz -->
+                        <div class="tab-pane fade" id="quiz-pane" role="tabpanel" aria-labelledby="quiz-tab">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                                <h4 class="fw-bold text-dark mb-4 text-center">Interactive MCQ Revision Quiz</h4>
+                                
+                                {% if quiz_list %}
+                                    <div id="quiz-container">
+                                        {% for q in quiz_list %}
+                                            <div class="quiz-question-card" id="q-card-{{ loop.index0 }}" style="{% if not loop.first %}display: none;{% endif %}">
+                                                <div class="d-flex justify-content-between text-muted small mb-3">
+                                                    <span>Question {{ loop.index }} of {{ quiz_list|length }}</span>
+                                                    <span class="fw-bold score-tracker">Score: <span class="current-score">0</span></span>
+                                                </div>
+                                                <h5 class="fw-bold text-dark mb-4">{{ q.question }}</h5>
+                                                
+                                                <div class="options-wrapper">
+                                                    {% for opt in q.options %}
+                                                        <div class="quiz-option-card" data-answer="{{ q.answer }}" data-option="{{ opt }}" onclick="checkQuizAnswer(this)">
+                                                            <span class="fw-semibold">{{ opt }}</span>
+                                                            <span class="icon-indicator"></span>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                                
+                                                <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                                                    <button class="btn btn-outline-secondary rounded-pill px-4" {% if loop.first %}disabled{% endif %} onclick="navigateQuiz({{ loop.index0 - 1 }})">Previous</button>
+                                                    
+                                                    {% if loop.last %}
+                                                        <button class="btn btn-primary rounded-pill px-4" id="btn-finish-quiz" style="display: none;" onclick="showQuizSummary()">Finish Quiz</button>
+                                                    {% else %}
+                                                        <button class="btn btn-primary rounded-pill px-4" id="btn-next-{{ loop.index0 }}" style="display: none;" onclick="navigateQuiz({{ loop.index0 + 1 }})">Next Question</button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+
+                                        <!-- Quiz Score Summary Screen -->
+                                        <div id="quiz-summary-card" class="text-center p-4" style="display: none;">
+                                            <div class="text-success fs-1 mb-3"><i class="bi bi-trophy-fill"></i></div>
+                                            <h4 class="fw-bold text-dark mb-2">Quiz Completed!</h4>
+                                            <p class="text-muted mb-4">You scored <span class="fw-bold text-primary" id="final-score-val">0</span> out of {{ quiz_list|length }} questions correctly.</p>
+                                            <button class="btn btn-outline-primary rounded-pill px-4" onclick="restartQuiz()">Try Again</button>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center">No quiz questions generated for this session.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Lecture Notes -->
+                        <div class="tab-pane fade" id="notes-pane" role="tabpanel" aria-labelledby="notes-tab">
+                            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                                    <h5 class="fw-bold text-dark mb-0">Study Notes Cheat Sheet</h5>
+                                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="copyNotesToClipboard()">
+                                        <i class="bi bi-clipboard me-1"></i>Copy Notes
+                                    </button>
+                                </div>
+                                <div class="markdown-body" id="study-notes-content">
+                                    {{ session_room.notes | replace('\n', '<br>') | safe }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Tab 4: Shared Materials -->
+                    <div class="tab-pane fade {% if not session_room.consent_given %}show active{% endif %}" id="files-pane" role="tabpanel" aria-labelledby="files-tab">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                            <h5 class="fw-bold text-dark mb-4">Downloads Folder</h5>
+                            {% if shared_files %}
+                                <div class="row g-3">
+                                    {% for file in shared_files %}
+                                        <div class="col-md-6">
+                                            <div class="border rounded-4 p-3 bg-light d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <i class="bi bi-file-earmark-zip-fill text-primary fs-3"></i>
+                                                    <div>
+                                                        <div class="fw-bold text-dark small text-truncate" style="max-width: 200px;">{{ file.name }}</div>
+                                                        <div class="text-muted" style="font-size: 0.65rem;">Classroom Upload</div>
+                                                    </div>
+                                                </div>
+                                                <a href="{{ file.url }}" download class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+                                                    <i class="bi bi-download"></i> Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <div class="text-muted fs-1 mb-2"><i class="bi bi-folder-x"></i></div>
+                                    <p class="text-muted mb-0">No lecture files were uploaded during this study session.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const orderId = {{ order.id }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // --- Quiz Logic ---
+    let totalScore = 0;
+    const qCount = {% if quiz_list %}{{ quiz_list|length }}{% else %}0{% endif %};
+    const answeredQuestions = new Set();
+
+    // Browser-Synthesized Sound Effects
+    const SoundFX = {
+        audioCtx: null,
+        init() {
+            if (!this.audioCtx) {
+                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
+        },
+        playCorrect() {
+            try {
+                this.init();
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Success arpeggio chime (C5 then E5)
+                osc.frequency.setValueAtTime(523.25, now); 
+                osc.frequency.setValueAtTime(659.25, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } catch (e) { console.error(e); }
+        },
+        playIncorrect() {
+            try {
+                this.init();
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Muffled buzz (A2 then G2)
+                osc.frequency.setValueAtTime(110.00, now);
+                osc.frequency.setValueAtTime(98.00, now + 0.08);
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } catch (e) { console.error(e); }
+        },
+        playUnlock() {
+            try {
+                this.init();
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Cash register sound: high bell + coins chime
+                osc1.frequency.setValueAtTime(1500, now);
+                osc1.frequency.exponentialRampToValueAtTime(1800, now + 0.15);
+                
+                osc2.frequency.setValueAtTime(800, now + 0.1);
+                osc2.frequency.setValueAtTime(1100, now + 0.18);
+                osc2.frequency.setValueAtTime(950, now + 0.25);
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                
+                osc1.start(now);
+                osc2.start(now + 0.1);
+                osc1.stop(now + 0.45);
+                osc2.stop(now + 0.45);
+            } catch (e) { console.error(e); }
+        },
+        playTrophy() {
+            try {
+                this.init();
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
+                // Victory arpeggio (C5 -> E5 -> G5 -> C6)
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
+                freqs.forEach((f, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(f, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.06, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.3);
+                });
+            } catch (e) { console.error(e); }
+        }
+    };
+
+    function checkQuizAnswer(card) {
+        const questionCard = card.closest('.quiz-question-card');
+        const qIndex = parseInt(questionCard.id.split('-')[2]);
+        
+        // Prevent double answering same question
+        if (answeredQuestions.has(qIndex)) return;
+        answeredQuestions.add(qIndex);
+
+        const chosenOption = card.getAttribute('data-option');
+        const correctAnswer = card.getAttribute('data-answer');
+        
+        const optionCards = questionCard.querySelectorAll('.quiz-option-card');
+        optionCards.forEach(c => {
+            const opt = c.getAttribute('data-option');
+            if (opt === correctAnswer) {
+                c.classList.add('correct');
+                c.querySelector('.icon-indicator').innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i>';
+            } else if (opt === chosenOption) {
+                c.classList.add('incorrect');
+                c.querySelector('.icon-indicator').innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-5"></i>';
+            }
+        });
+
+        if (chosenOption === correctAnswer) {
+            totalScore++;
+            SoundFX.playCorrect();
+            // Update live scores
+            document.querySelectorAll('.current-score').forEach(el => el.textContent = totalScore);
+        } else {
+            SoundFX.playIncorrect();
+        }
+
+        // Show Next button or Finish button
+        const nextBtn = document.getElementById(`btn-next-${qIndex}`);
+        const finishBtn = document.getElementById('btn-finish-quiz');
+        if (nextBtn) {
+            nextBtn.style.display = 'inline-block';
+        } else if (finishBtn) {
+            finishBtn.style.display = 'inline-block';
+        }
+    }
+
+    function navigateQuiz(index) {
+        document.querySelectorAll('.quiz-question-card').forEach(card => card.style.display = 'none');
+        const targetCard = document.getElementById(`q-card-${index}`);
+        if (targetCard) {
+            targetCard.style.display = 'block';
+        }
+    }
+
+    function showQuizSummary() {
+        document.querySelectorAll('.quiz-question-card').forEach(card => card.style.display = 'none');
+        document.getElementById('quiz-summary-card').style.display = 'block';
+        document.getElementById('final-score-val').textContent = totalScore;
+        SoundFX.playTrophy();
+    }
+
+    function restartQuiz() {
+        totalScore = 0;
+        answeredQuestions.clear();
+        document.querySelectorAll('.current-score').forEach(el => el.textContent = totalScore);
+        
+        // Reset classes
+        document.querySelectorAll('.quiz-option-card').forEach(card => {
+            card.classList.remove('correct', 'incorrect');
+            card.querySelector('.icon-indicator').innerHTML = '';
+        });
+        // Hide next/finish buttons
+        document.querySelectorAll("[id^='btn-next-']").forEach(btn => btn.style.display = 'none');
+        const finishBtn = document.getElementById('btn-finish-quiz');
+        if (finishBtn) finishBtn.style.display = 'none';
+
+        // Hide summary card, show first card
+        document.getElementById('quiz-summary-card').style.display = 'none';
+        navigateQuiz(0);
+    }
+
+    // --- Copy Notes ---
+    function copyNotesToClipboard() {
+        const textContent = document.getElementById('study-notes-content').innerText;
+        navigator.clipboard.writeText(textContent).then(() => {
+            alert("Study Notes successfully copied to clipboard!");
+        }).catch(err => {
+            console.error("Could not copy notes:", err);
+        });
+    }
+
+    // --- Direct Unlock for Demonstration Purposes ---
+    const directUnlockBtn = document.getElementById('btn-direct-unlock');
+    if (directUnlockBtn) {
+        directUnlockBtn.addEventListener('click', async function() {
+            const spinner = document.getElementById('unlock-spinner');
+            const icon = document.getElementById('unlock-icon');
+            
+            // Show loading
+            if (spinner) spinner.style.display = 'inline-block';
+            if (icon) icon.style.display = 'none';
+            directUnlockBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/orders/${orderId}/session/unlock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                if (response.ok) {
+                    SoundFX.playUnlock();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    alert("Unlock verification failed. Please try again.");
+                    if (spinner) spinner.style.display = 'none';
+                    if (icon) icon.style.display = 'inline-block';
+                    directUnlockBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error("Unlock error:", err);
+                alert("Unlock error. Please check your connection.");
+                if (spinner) spinner.style.display = 'none';
+                if (icon) icon.style.display = 'inline-block';
+                directUnlockBtn.disabled = false;
+            }
+        });
+    }
+</script>
+{% endblock %}

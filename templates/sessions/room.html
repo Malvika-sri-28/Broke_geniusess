@@ -1,0 +1,873 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Room - Broke Geniuses{% endblock %}
+
+{% block extra_css %}
+<style>
+    .session-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    @media (min-width: 992px) {
+        .session-grid {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+    .video-container {
+        position: relative;
+        background-color: #1e293b;
+        border-radius: 16px;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+        box-shadow: var(--shadow-lg);
+    }
+    .video-label {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        background-color: rgba(15, 23, 42, 0.75);
+        color: #ffffff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        z-index: 10;
+        backdrop-filter: blur(4px);
+    }
+    .local-video-preview {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        width: 140px;
+        aspect-ratio: 4/3;
+        background-color: #0f172a;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        z-index: 20;
+        box-shadow: var(--shadow-md);
+    }
+    .partner-video-stream {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .media-controls {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 30;
+    }
+    .control-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(4px);
+    }
+    .control-btn:hover {
+        background-color: var(--primary-color);
+        transform: scale(1.05);
+    }
+    .control-btn.btn-danger-mute {
+        background-color: rgba(239, 68, 68, 0.85);
+    }
+    .control-btn.btn-danger-mute:hover {
+        background-color: #dc2626;
+    }
+    .whiteboard-box {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin-top: 1.5rem;
+    }
+    .whiteboard-header {
+        background-color: #f8fafc;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .whiteboard-tools {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .tool-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background-color: #ffffff;
+        transition: all 0.15s ease;
+        color: var(--text-secondary);
+    }
+    .tool-icon:hover, .tool-icon.active {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+    }
+    .whiteboard-canvas {
+        background-color: #fafafa;
+        display: block;
+        width: 100%;
+        height: 320px;
+        cursor: crosshair;
+    }
+    .sidebar-panel {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 500px;
+        box-shadow: var(--shadow-sm);
+    }
+    .sidebar-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem;
+        background-color: #f8fafc;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+    .transcript-box {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.8rem;
+        background-color: #0f172a;
+        color: #10b981;
+        border-bottom: 1px solid var(--border-color);
+        max-height: 280px;
+    }
+    .file-uploads-box {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .file-item {
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .avatar-mock-animation {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #cbd5e1;
+        z-index: 5;
+    }
+    .avatar-mock-pulse {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: rgba(37, 99, 235, 0.2);
+        border: 3px solid var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        animation: pulseMock 2s infinite ease-in-out;
+    }
+    @keyframes pulseMock {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 0 20px 10px rgba(37, 99, 235, 0.2); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 bg-white p-4 rounded-4 shadow-sm border">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <i class="bi bi-mortarboard-fill text-primary me-2"></i>Study Session
+            </h2>
+            <p class="text-muted mb-0 small">
+                Order #{{ order.id }} &bull; <strong>{{ order.service.title }}</strong> &bull; Partner: @{{ partner.username }}
+            </p>
+        </div>
+        <div>
+            {% if is_seller %}
+                <!-- End Session Form (For Tutor) -->
+                <form action="{{ url_for('session.end_session', order_id=order.id) }}" method="POST" class="delete-confirm-form" data-item-type="tutoring session and complete the order">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger px-4 rounded-pill fw-semibold shadow-sm">
+                        <i class="bi bi-telephone-x-fill me-2"></i>End Tutoring Session
+                    </button>
+                </form>
+            {% else %}
+                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-broadcast me-1"></i>Active Learning</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Session Grid -->
+    <div class="session-grid">
+        
+        <!-- Left Side: Video Room & Drawing Board -->
+        <div>
+            <!-- Video Box -->
+            <div class="video-container">
+                <!-- Local Camera Preview -->
+                <div class="local-video-preview">
+                    <video id="local-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <span class="video-label" style="font-size: 0.6rem; bottom: 4px; left: 4px;">You</span>
+                </div>
+
+                <!-- Remote Mock Streams -->
+                <div class="avatar-mock-animation">
+                    <div class="avatar-mock-pulse">
+                        <img src="{{ url_for('static', filename='profile_pics/' + partner.profile_pic) }}" alt="Partner avatar" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="fw-bold">{{ partner.name }}</div>
+                    <div class="small text-muted">@{{ partner.username }}</div>
+                </div>
+
+                <canvas id="audio-wave-canvas" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity: 0.15;"></canvas>
+                <span class="video-label">{{ partner.name }} ({{ partner.university }})</span>
+
+                <!-- Media Action Controls -->
+                <div class="media-controls">
+                    <button id="toggle-mic-btn" class="control-btn" title="Mute Microphone">
+                        <i class="bi bi-mic-fill"></i>
+                    </button>
+                    <button id="toggle-cam-btn" class="control-btn" title="Stop Camera">
+                        <i class="bi bi-camera-video-fill"></i>
+                    </button>
+                    <button id="clear-board-tools" class="control-btn" title="Toggle Classroom View" style="background-color: var(--secondary-color);">
+                        <i class="bi bi-aspect-ratio-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Whiteboard Box -->
+            <div class="whiteboard-box">
+                <div class="whiteboard-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-pencil-fill text-primary me-2"></i>Classroom Whiteboard</span>
+                    <div class="whiteboard-tools">
+                        <button class="tool-icon active" id="tool-brush" title="Pen"><i class="bi bi-pen-fill"></i></button>
+                        <button class="tool-icon" id="tool-eraser" title="Eraser"><i class="bi bi-eraser-fill"></i></button>
+                        <input type="color" id="tool-color" value="#2563eb" style="border: none; width: 32px; height: 32px; padding: 0; cursor: pointer; border-radius: 6px; overflow: hidden;">
+                        <button class="tool-icon" id="btn-clear-canvas" title="Clear Canvas" style="border-color: #fecaca; color: #ef4444;"><i class="bi bi-trash3-fill"></i></button>
+                    </div>
+                </div>
+                <canvas id="whiteboard" class="whiteboard-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Side: AI Monitor Controls & Transcript Logs -->
+        <div>
+            <div class="sidebar-panel">
+                <div class="sidebar-header">
+                    <h5 class="fw-bold text-dark mb-1">AI Session Monitor</h5>
+                    <p class="text-muted small mb-3">AI reads live transcription to generate study summaries and quizzes.</p>
+                    
+                    <!-- Consent Checkbox -->
+                    <div class="form-check form-switch p-3 bg-light rounded-3 border">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="consent-switch" {% if session_room.consent_given %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold text-dark" for="consent-switch">Consent AI Study Assistant</label>
+                        <div class="form-text small" style="font-size: 0.7rem; margin-top: 4px;">Allows AI to monitor transcription and build revision cheat sheets.</div>
+                    </div>
+                </div>
+
+                <!-- Live Transcription Display -->
+                <div class="p-3 border-bottom bg-slate-900">
+                    <span class="badge bg-danger mb-2 animate-pulse"><i class="bi bi-record-fill me-1"></i>Live Transcription</span>
+                </div>
+                <div id="transcript-feed" class="transcript-box">
+                    {% if session_room.transcript %}
+                        {{ session_room.transcript | replace('\n', '<br>') | safe }}
+                    {% else %}
+                        [SYSTEM]: Waiting for session to start...<br>
+                    {% endif %}
+                </div>
+
+                <!-- File uploads and asset sharing -->
+                <div class="file-uploads-box mt-auto">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-folder-symlink-fill text-secondary me-2"></i>Shared Lecture Files</h6>
+                    
+                    <!-- Files List -->
+                    <div id="shared-files-list" class="mb-3">
+                        <div class="text-muted small text-center py-2" id="no-files-notice">No files shared yet in this classroom.</div>
+                    </div>
+
+                    <!-- File selector form -->
+                    <div class="input-group input-group-sm">
+                        <input type="file" class="form-control" id="classroom-file-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg">
+                        <button class="btn btn-primary" type="button" id="classroom-file-upload-btn">
+                            <span class="spinner-border spinner-border-sm me-1" id="upload-spinner" style="display: none;" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-cloud-arrow-up-fill" id="upload-icon"></i> Share
+                        </button>
+                    </div>
+                    <div class="form-text small" style="font-size: 0.65rem;">Max 2MB. Allowed: PDFs, slides, documents, images.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const orderId = {{ order.id }};
+        const isSeller = {% if is_seller %}true{% else %}false{% endif %};
+        const partnerName = "{{ partner.name }}";
+        const currentUserName = "{{ current_user.name }}";
+        
+        // CSRF Token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Browser-Synthesized Room Sound Effects
+        const RoomSFX = {
+            audioCtx: null,
+            drawingOsc: null,
+            drawingGain: null,
+            init() {
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            },
+            playClick() {
+                try {
+                    this.init();
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } catch(e){}
+            },
+            playClear() {
+                try {
+                    this.init();
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } catch(e){}
+            },
+            startDraw() {
+                try {
+                    this.init();
+                    if (this.drawingOsc) return;
+                    this.drawingOsc = this.audioCtx.createOscillator();
+                    this.drawingGain = this.audioCtx.createGain();
+                    this.drawingOsc.type = 'triangle';
+                    this.drawingOsc.frequency.setValueAtTime(160, this.audioCtx.currentTime);
+                    
+                    const filter = this.audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(220, this.audioCtx.currentTime);
+                    
+                    this.drawingOsc.connect(filter);
+                    filter.connect(this.drawingGain);
+                    this.drawingGain.connect(this.audioCtx.destination);
+                    
+                    this.drawingGain.gain.setValueAtTime(0.003, this.audioCtx.currentTime);
+                    this.drawingOsc.start();
+                } catch(e){}
+            },
+            modulateDraw(x, y) {
+                if (!this.drawingOsc || !this.audioCtx) return;
+                try {
+                    const val = 140 + ((x + y) % 50);
+                    this.drawingOsc.frequency.setValueAtTime(val, this.audioCtx.currentTime);
+                } catch(e){}
+            },
+            stopDraw() {
+                try {
+                    if (this.drawingOsc) {
+                        this.drawingOsc.stop();
+                        this.drawingOsc.disconnect();
+                        this.drawingOsc = null;
+                    }
+                } catch(e){}
+            }
+        };
+
+        // --- 1. Camera activation ---
+        const localVideo = document.getElementById('local-video');
+        let localStream = null;
+        
+        async function startCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                if (localVideo) {
+                    localVideo.srcObject = localStream;
+                }
+            } catch (err) {
+                console.warn("Could not access camera/microphone. Using placeholder preview.", err);
+            }
+        }
+        startCamera();
+
+        // Control buttons
+        const micBtn = document.getElementById('toggle-mic-btn');
+        const camBtn = document.getElementById('toggle-cam-btn');
+        let micMuted = false;
+        let camStopped = false;
+
+        if (micBtn) {
+            micBtn.addEventListener('click', function() {
+                micMuted = !micMuted;
+                RoomSFX.playClick();
+                if (localStream) {
+                    localStream.getAudioTracks().forEach(track => track.enabled = !micMuted);
+                }
+                if (micMuted) {
+                    micBtn.classList.add('btn-danger-mute');
+                    micBtn.innerHTML = '<i class="bi bi-mic-mute-fill"></i>';
+                } else {
+                    micBtn.classList.remove('btn-danger-mute');
+                    micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                }
+            });
+        }
+
+        if (camBtn) {
+            camBtn.addEventListener('click', function() {
+                camStopped = !camStopped;
+                RoomSFX.playClick();
+                if (localStream) {
+                    localStream.getVideoTracks().forEach(track => track.enabled = !camStopped);
+                }
+                if (camStopped) {
+                    camBtn.classList.add('btn-danger-mute');
+                    camBtn.innerHTML = '<i class="bi bi-camera-video-off-fill"></i>';
+                } else {
+                    camBtn.classList.remove('btn-danger-mute');
+                    camBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i>';
+                }
+            });
+        }
+
+        // --- 2. Live Whiteboard drawing board ---
+        const canvas = document.getElementById('whiteboard');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            
+            // Adjust canvas resolution dynamically
+            function resizeCanvas() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                // Redraw background grid
+                ctx.fillStyle = '#fafafa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                const gridSpacing = 20;
+                for (let x = 0; x < canvas.width; x += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+
+
+            let drawing = false;
+            let currentTool = 'brush'; // brush, eraser
+            let brushColor = '#2563eb';
+            let brushSize = 3;
+
+            // Tools handlers
+            const btnBrush = document.getElementById('tool-brush');
+            const btnEraser = document.getElementById('tool-eraser');
+            const inputColor = document.getElementById('tool-color');
+            const btnClear = document.getElementById('btn-clear-canvas');
+
+            if (btnBrush) {
+                btnBrush.addEventListener('click', () => {
+                    currentTool = 'brush';
+                    btnBrush.classList.add('active');
+                    if (btnEraser) btnEraser.classList.remove('active');
+                    RoomSFX.playClick();
+                });
+            }
+
+            if (btnEraser) {
+                btnEraser.addEventListener('click', () => {
+                    currentTool = 'eraser';
+                    btnEraser.classList.add('active');
+                    if (btnBrush) btnBrush.classList.remove('active');
+                    RoomSFX.playClick();
+                });
+            }
+
+            if (inputColor) {
+                inputColor.addEventListener('input', (e) => {
+                    brushColor = e.target.value;
+                    currentTool = 'brush';
+                    if (btnBrush) btnBrush.classList.add('active');
+                    if (btnEraser) btnEraser.classList.remove('active');
+                });
+                inputColor.addEventListener('click', () => {
+                    RoomSFX.playClick();
+                });
+            }
+
+            if (btnClear) {
+                btnClear.addEventListener('click', () => {
+                    ctx.fillStyle = '#fafafa';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    drawGrid();
+                    RoomSFX.playClear();
+                });
+            }
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            function startDraw(e) {
+                drawing = true;
+                const pos = getMousePos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                RoomSFX.startDraw();
+            }
+
+            function draw(e) {
+                if (!drawing) return;
+                e.preventDefault();
+                const pos = getMousePos(e);
+                
+                ctx.lineTo(pos.x, pos.y);
+                ctx.lineWidth = currentTool === 'eraser' ? 20 : brushSize;
+                ctx.strokeStyle = currentTool === 'eraser' ? '#fafafa' : brushColor;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                RoomSFX.modulateDraw(pos.x, pos.y);
+            }
+
+            function stopDraw() {
+                if (drawing) {
+                    drawing = false;
+                    RoomSFX.stopDraw();
+                }
+            }
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+
+            canvas.addEventListener('touchstart', startDraw);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDraw);
+
+            // --- Tutor Drawing Simulation ---
+            function simulateTutorDrawing() {
+                const segments = [
+                    // Triangle sketching segments
+                    { start: {x: 100, y: 100}, points: [{x: 100, y: 220}, {x: 250, y: 220}, {x: 100, y: 100}] }
+                ];
+                
+                let segmentIndex = 0;
+                let pointIndex = 0;
+                let activeDrawing = false;
+
+                function drawNextPoint() {
+                    if (segmentIndex >= segments.length) {
+                        RoomSFX.stopDraw();
+                        // Draw label text
+                        ctx.font = "bold 15px sans-serif";
+                        ctx.fillStyle = "#dc2626";
+                        ctx.fillText("a = 3", 60, 160);
+                        ctx.fillText("b = 4", 160, 240);
+                        ctx.fillText("c = 5", 180, 150);
+                        return;
+                    }
+
+                    const seg = segments[segmentIndex];
+                    if (!activeDrawing) {
+                        ctx.beginPath();
+                        ctx.moveTo(seg.start.x, seg.start.y);
+                        activeDrawing = true;
+                        pointIndex = 0;
+                        RoomSFX.startDraw();
+                    }
+
+                    if (pointIndex < seg.points.length) {
+                        const pt = seg.points[pointIndex];
+                        ctx.lineTo(pt.x, pt.y);
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = '#dc2626'; // Tutor draws red segments
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.stroke();
+                        
+                        RoomSFX.modulateDraw(pt.x, pt.y);
+                        pointIndex++;
+                        setTimeout(drawNextPoint, 60);
+                    } else {
+                        activeDrawing = false;
+                        segmentIndex++;
+                        RoomSFX.stopDraw();
+                        setTimeout(drawNextPoint, 300);
+                    }
+                }
+
+                const feed = document.getElementById('transcript-feed');
+                if (feed) {
+                    feed.insertAdjacentHTML('beforeend', `<span style="color: #f87171;">[SYSTEM]: @${partnerName} is drawing a geometry example...</span><br>`);
+                    feed.scrollTop = feed.scrollHeight;
+                }
+                drawNextPoint();
+            }
+
+            // Trigger the simulation 10 seconds after load
+            setTimeout(simulateTutorDrawing, 10000);
+        }
+
+        // --- 3. Consent Toggle ---
+        const consentSwitch = document.getElementById('consent-switch');
+        if (consentSwitch) {
+            consentSwitch.addEventListener('change', async function() {
+                try {
+                    await fetch(`/orders/${orderId}/session/consent`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ consent: this.checked })
+                    });
+                } catch (error) {
+                    console.error("Error setting AI consent:", error);
+                }
+            });
+        }
+
+        // --- 4. Live Dialogue Transcription Simulation ---
+        const transcriptFeed = document.getElementById('transcript-feed');
+        
+        const simulationPhrases = [
+            { sender: partnerName, text: "Hey! Let's start the lecture. Can we check the whiteboard first?" },
+            { sender: currentUserName, text: "Sure! Let's write the core concepts. Are we doing inheritance models today?" },
+            { sender: partnerName, text: "Exactly. Remember that OOP structures rely on code reuse." },
+            { sender: currentUserName, text: "Right, so we build parent classes and inherit behaviors." },
+            { sender: partnerName, text: "Yes! Also make sure to check time complexity. Balanced search trees are O(log n)." },
+            { sender: currentUserName, text: "Got it. Let's make sure we test boundary conditions too." },
+            { sender: partnerName, text: "Perfect. I am sharing some slides and cheat sheets in the materials folder." },
+            { sender: currentUserName, text: "I can see the slides now. Thanks! Let's run a quick revision summary review." }
+        ];
+        
+        let phraseIndex = 0;
+        
+        async function postSimulatedTranscript(sender, text) {
+            // Check if consent is active
+            if (!consentSwitch.checked) return;
+            
+            try {
+                const response = await fetch(`/orders/${orderId}/session/send-transcript`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ sender: sender, text: text })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (transcriptFeed && data.transcript) {
+                        transcriptFeed.innerHTML = data.transcript.replace(/\n/g, '<br>');
+                        transcriptFeed.scrollTop = transcriptFeed.scrollHeight;
+                    }
+                }
+            } catch (err) {
+                console.error("Error posting simulated transcript:", err);
+            }
+        }
+        
+        // Loop simulation dialogues every 15-20 seconds to represent live lesson conversation
+        setInterval(() => {
+            if (phraseIndex < simulationPhrases.length) {
+                const item = simulationPhrases[phraseIndex];
+                postSimulatedTranscript(item.sender, item.text);
+                phraseIndex++;
+            }
+        }, 15000);
+
+        // --- 5. File uploads & Document Sharing ---
+        const fileInput = document.getElementById('classroom-file-input');
+        const uploadBtn = document.getElementById('classroom-file-upload-btn');
+        const uploadSpinner = document.getElementById('upload-spinner');
+        const uploadIcon = document.getElementById('upload-icon');
+        const filesList = document.getElementById('shared-files-list');
+        const noFilesNotice = document.getElementById('no-files-notice');
+
+        async function uploadClassroomFile() {
+            if (!fileInput || !fileInput.files[0]) {
+                alert("Please select a file to share first.");
+                return;
+            }
+            const file = fileInput.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                alert("File size exceeds 2MB limit.");
+                return;
+            }
+
+            // Show loading
+            if (uploadSpinner) uploadSpinner.style.display = 'inline-block';
+            if (uploadIcon) uploadIcon.style.display = 'none';
+            uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`/orders/${orderId}/session/upload-file`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Append to files list
+                        if (noFilesNotice) noFilesNotice.style.display = 'none';
+                        const fileHtml = `
+                            <div class="file-item">
+                                <span class="fw-bold text-dark"><i class="bi bi-file-earmark-text-fill me-1 text-primary"></i>${data.filename}</span>
+                                <a href="${data.url}" download class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-semibold">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        `;
+                        filesList.insertAdjacentHTML('beforeend', fileHtml);
+                        fileInput.value = ''; // Reset input
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                } else {
+                    const errorData = await response.json();
+                    alert("Upload failed: " + (errorData.error || "Server error"));
+                }
+            } catch (err) {
+                console.error("File upload error:", err);
+                alert("Upload network error. Please try again.");
+            } finally {
+                if (uploadSpinner) uploadSpinner.style.display = 'none';
+                if (uploadIcon) uploadIcon.style.display = 'inline-block';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', uploadClassroomFile);
+        }
+
+        // Mock audio waves rendering
+        const audioCanvas = document.getElementById('audio-wave-canvas');
+        if (audioCanvas) {
+            const waveCtx = audioCanvas.getContext('2d');
+            function resizeWaveCanvas() {
+                audioCanvas.width = audioCanvas.parentElement.clientWidth;
+                audioCanvas.height = audioCanvas.parentElement.clientHeight;
+            }
+            window.addEventListener('resize', resizeWaveCanvas);
+            resizeWaveCanvas();
+            
+            let phase = 0;
+            function drawWaves() {
+                waveCtx.clearRect(0, 0, audioCanvas.width, audioCanvas.height);
+                waveCtx.strokeStyle = '#2563eb';
+                waveCtx.lineWidth = 2;
+                
+                // Draw 3 waves
+                for (let w = 0; w < 3; w++) {
+                    waveCtx.beginPath();
+                    const amplitude = 15 + w * 5;
+                    const frequency = 0.008 + w * 0.002;
+                    for (let x = 0; x < audioCanvas.width; x++) {
+                        const y = audioCanvas.height / 2 + Math.sin(x * frequency + phase + w) * amplitude;
+                        if (x === 0) waveCtx.moveTo(x, y);
+                        else waveCtx.lineTo(x, y);
+                    }
+                    waveCtx.stroke();
+                }
+                phase += 0.03;
+                requestAnimationFrame(drawWaves);
+            }
+            drawWaves();
+        }
+    });
+</script>
+{% endblock %}

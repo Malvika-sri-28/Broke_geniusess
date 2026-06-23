@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Post a Service - Broke Geniuses{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card glass-card border-0 shadow-lg p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-dark mb-1">List a New Campus Service</h2>
+                    <p class="text-muted small">Share your skills and earn on your own terms</p>
+                </div>
+                
+                <form action="{{ url_for('service.post_service') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-4 text-center">
+                        <div class="mx-auto mb-2 border rounded-4 overflow-hidden shadow-sm bg-light" style="width: 280px; height: 160px;">
+                            <img src="{{ url_for('static', filename='service_images/default_service.png') }}" alt="Service Image Preview" class="w-100 h-100 object-fit-cover image-preview-target">
+                        </div>
+                        <label for="service_image" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                            <i class="bi bi-image me-1"></i>Upload Service Image
+                            <input type="file" id="service_image" name="service_image" class="d-none image-preview-input" accept="image/*">
+                        </label>
+                        <div class="form-text small" style="font-size: 0.7rem;">Allowed: PNG, JPG, JPEG, WEBP. Max 2MB.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-semibold text-dark">Service Title</label>
+                        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Python Assignments & Coding Tutoring" required>
+                        <div class="form-text small" style="font-size: 0.75rem;">Make it descriptive and clear.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="description" class="form-label fw-semibold text-dark mb-0">Description</label>
+                            <span id="ai-gen-description-btn" class="ai-gen-btn" title="Auto-generate description using AI based on your title">
+                                <span class="ai-gen-spinner me-1" id="ai-gen-spinner"></span>
+                                <i class="bi bi-magic me-1" id="ai-gen-icon"></i>AI Auto-Generate
+                            </span>
+                        </div>
+                        <textarea id="description" name="description" rows="5" class="form-control" placeholder="Describe what you will offer, your experience, delivery time, and requirements..." required></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="price" class="form-label fw-semibold text-dark">Price (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">₹</span>
+                                <input type="number" id="price" name="price" step="0.01" min="1" class="form-control" placeholder="e.g. 499.00" required>
+                            </div>
+                            <div class="form-text small" style="font-size: 0.75rem;">Set a competitive peer price.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="keywords" class="form-label fw-semibold text-dark">Search Keywords</label>
+                            <input type="text" id="keywords" name="keywords" class="form-control" placeholder="e.g. python, programming, tutoring">
+                            <div class="form-text small" style="font-size: 0.75rem;">Comma-separated tags to help students find you.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary w-50 py-2 fw-semibold shadow-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Publish Listing
+                        </button>
+                        <a href="{{ url_for('profile.view_profile') }}" class="btn btn-outline-secondary w-50 py-2">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

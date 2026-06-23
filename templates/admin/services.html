@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Services - Admin Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-5 py-5 animate-fade-in">
+    <div class="row">
+        <!-- Admin Nav Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-shield-lock-fill text-danger me-2"></i>Admin Menu</h4>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-speedometer2 me-2"></i>Overview Analytics
+                    </a>
+                    <a href="{{ url_for('admin.users_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-people-fill me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.services_list') }}" class="list-group-item list-group-item-action active border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-grid-fill me-2"></i>Manage Services
+                    </a>
+                    <a href="{{ url_for('admin.reviews_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2">
+                        <i class="bi bi-chat-left-text-fill me-2"></i>Manage Reviews
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Column -->
+        <div class="col-lg-9">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h2 class="fw-bold text-dark mb-0">Platform Service Listings</h2>
+                <span class="badge bg-primary px-3 py-2 rounded-pill">{{ services|length }} Active Gigs</span>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                {% if services %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Service Gig</th>
+                                    <th>Seller</th>
+                                    <th>University</th>
+                                    <th>Price</th>
+                                    <th>Rating</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in services %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img src="{{ url_for('static', filename='service_images/' + s.image) }}" alt="Thumbnail" class="rounded border" style="width: 50px; height: 35px; object-fit: cover;">
+                                                <div>
+                                                    <div class="fw-bold text-dark">
+                                                        <a href="{{ url_for('service.service_detail', service_id=s.id) }}" class="text-decoration-none text-dark hover-primary">{{ s.title }}</a>
+                                                    </div>
+                                                    <div class="small text-muted" style="font-size: 0.75rem;">Posted {{ s.created_at.strftime('%d-%b-%Y') }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium text-dark">@{{ s.seller.username }}</span>
+                                            <div class="small text-muted">{{ s.seller.name }}</div>
+                                        </td>
+                                        <td><span class="small fw-semibold text-secondary">{{ s.university }}</span></td>
+                                        <td><span class="fw-bold text-primary">₹{{ '{:,.2f}'.format(s.price) }}</span></td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <i class="bi bi-star-fill text-warning small"></i>
+                                                <span class="small fw-bold">{{ s.total_rating }}</span>
+                                                <span class="text-muted small">({{ s.review_count }})</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <form action="{{ url_for('service.delete_service', service_id=s.id) }}" method="POST" class="delete-confirm-form" data-item-type="service listing">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                                    <i class="bi bi-trash-fill"></i> Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-grid fs-1 mb-2"></i>
+                        <p>No services currently listed.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

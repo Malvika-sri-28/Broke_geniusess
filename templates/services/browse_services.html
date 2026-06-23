@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Gigs - Broke Geniuses{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade-in">
+    <div class="row">
+        <!-- Filter Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-funnel-fill text-primary me-2"></i>Filter Gigs</h4>
+                
+                <form action="{{ url_for('service.browse_services') }}" method="GET">
+                    <!-- Keep the search query if it was active -->
+                    {% if search_query %}
+                        <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+
+                    <!-- University Filter -->
+                    <div class="mb-4">
+                        <label for="university" class="form-label fw-semibold text-dark">University</label>
+                        <input type="text" name="university" id="university" class="form-control" list="university-suggestions" placeholder="Type college name..." value="{{ selected_university }}">
+                        <datalist id="university-suggestions">
+                            {% for uni in universities %}
+                                <option value="{{ uni }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+
+                    <!-- Price Range Filter -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark d-block">Price (₹)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" name="min_price" class="form-control" placeholder="Min" value="{{ min_price }}" min="0">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" name="max_price" class="form-control" placeholder="Max" value="{{ max_price }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sort Filter -->
+                    <div class="mb-4">
+                        <label for="sort" class="form-label fw-semibold text-dark">Sort By</label>
+                        <select name="sort" id="sort" class="form-select">
+                            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest first</option>
+                            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Seller Rating</option>
+                        </select>
+                    </div>
+
+                    <!-- Apply & Reset Buttons -->
+                    <button type="submit" class="btn btn-primary w-100 mb-2 py-2 fw-semibold">Apply Filters</button>
+                    <a href="{{ url_for('service.browse_services') }}" class="btn btn-outline-secondary w-100">Clear All</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Marketplace Main Content -->
+        <div class="col-lg-9">
+            <!-- Search bar & results info -->
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white mb-4">
+                <form action="{{ url_for('service.browse_services') }}" method="GET" class="mb-3">
+                    <!-- Keep current filters active when executing search -->
+                    {% if selected_university %}
+                        <input type="hidden" name="university" value="{{ selected_university }}">
+                    {% endif %}
+                    {% if min_price %}
+                        <input type="hidden" name="min_price" value="{{ min_price }}">
+                    {% endif %}
+                    {% if max_price %}
+                        <input type="hidden" name="max_price" value="{{ max_price }}">
+                    {% endif %}
+                    {% if sort_by %}
+                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                    {% endif %}
+
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search for tutors, resume reviewers, designers..." value="{{ search_query }}">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">Search</button>
+                    </div>
+                </form>
+                
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="text-muted small">
+                        Found <strong class="text-dark">{{ services|length }}</strong> results
+                        {% if search_query %}
+                            for "<span class="text-primary fw-medium">{{ search_query }}</span>"
+                        {% endif %}
+                        {% if selected_university %}
+                            at <span class="text-primary fw-medium">{{ selected_university }}</span>
+                        {% endif %}
+                    </div>
+                    {% if search_query or selected_university or min_price or max_price %}
+                        <a href="{{ url_for('service.browse_services') }}" class="text-decoration-none small text-danger"><i class="bi bi-x-circle me-1"></i>Reset search</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gigs List -->
+            <div class="row g-4">
+                {% if services %}
+                    {% for service in services %}
+                        <div class="col-md-6">
+                            <div class="card service-card">
+                                <div class="service-card-img-wrapper">
+                                    <span class="service-badge-uni">{{ service.university }}</span>
+                                    {% if service.seller.is_demo %}
+                                        <span class="service-badge-demo">Demo</span>
+                                    {% endif %}
+                                    <img src="{{ url_for('static', filename='service_images/' + service.image) }}" alt="{{ service.title }}" class="service-card-img">
+                                </div>
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <img src="{{ url_for('static', filename='profile_pics/' + service.seller.profile_pic) }}" alt="Avatar" class="rounded-circle" style="width: 26px; height: 26px; object-fit: cover;">
+                                        <span class="small fw-semibold text-dark">@{{ service.seller.username }}</span>
+                                        {% if service.seller.is_top_rated %}
+                                            <span class="badge bg-warning text-dark px-2 rounded-pill" style="font-size: 0.65rem;">Top Rated</span>
+                                        {% endif %}
+                                    </div>
+                                    <h5 class="card-title fw-bold text-dark mb-2 text-truncate-2" style="height: 48px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                        <a href="{{ url_for('service.service_detail', service_id=service.id) }}" class="text-decoration-none text-dark hover-primary">{{ service.title }}</a>
+                                    </h5>
+                                    <p class="card-text small text-muted text-truncate-3 mb-4" style="height: 60px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+                                        {{ service.description }}
+                                    </p>
+                                    <div class="mt-auto border-top pt-3 d-flex align-items-center justify-content-between">
+                                        <span class="service-card-price">₹{{ '{:,.2f}'.format(service.price) }}</span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            {{ service.total_rating|star_rating|safe }}
+                                            <span class="small text-muted">({{ service.review_count }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12 text-center py-5">
+                        <div class="text-muted fs-1 mb-2"><i class="bi bi-search-heart"></i></div>
+                        <h4 class="fw-bold">No Services Found</h4>
+                        <p class="text-muted">Try adjusting your filters or search terms.</p>
+                        <a href="{{ url_for('service.browse_services') }}" class="btn btn-primary px-4 rounded-pill mt-2">Clear Filters</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

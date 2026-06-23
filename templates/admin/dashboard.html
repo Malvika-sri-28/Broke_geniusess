@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Broke Geniuses{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-5 py-5 animate-fade-in">
+    <div class="row">
+        <!-- Admin Nav Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-shield-lock-fill text-danger me-2"></i>Admin Menu</h4>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action active border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-speedometer2 me-2"></i>Overview Analytics
+                    </a>
+                    <a href="{{ url_for('admin.users_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-people-fill me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.services_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-grid-fill me-2"></i>Manage Services
+                    </a>
+                    <a href="{{ url_for('admin.reviews_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2">
+                        <i class="bi bi-chat-left-text-fill me-2"></i>Manage Reviews
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="col-lg-9">
+            <h2 class="fw-bold text-dark mb-4">Control Panel Overview</h2>
+            
+            <!-- Summary Metric Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-6 col-md-3">
+                    <div class="card admin-metric-card bg-metric-blue">
+                        <div class="fs-4"><i class="bi bi-people-fill"></i></div>
+                        <h3 class="fw-bold mb-1">{{ metrics.total_users }}</h3>
+                        <span class="small text-white-50 uppercase">Total Users</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card admin-metric-card bg-metric-purple">
+                        <div class="fs-4"><i class="bi bi-grid-fill"></i></div>
+                        <h3 class="fw-bold mb-1">{{ metrics.total_services }}</h3>
+                        <span class="small text-white-50 uppercase">Active Services</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card admin-metric-card bg-metric-emerald">
+                        <div class="fs-4"><i class="bi bi-chat-left-text-fill"></i></div>
+                        <h3 class="fw-bold mb-1">{{ metrics.total_reviews }}</h3>
+                        <span class="small text-white-50 uppercase">Total Reviews</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card admin-metric-card bg-metric-rose">
+                        <div class="fs-4"><i class="bi bi-wallet2"></i></div>
+                        <h3 class="fw-bold mb-1">{{ metrics.total_orders }}</h3>
+                        <span class="small text-white-50 uppercase">Total Orders</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <h4 class="fw-bold text-dark mb-4"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Real-time Data Analytics</h4>
+            
+            <div class="row g-4">
+                <!-- User & Service Growth -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                        <h5 class="fw-bold text-dark mb-3">User & Service Registrations</h5>
+                        <canvas id="registrationsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Order Status -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                        <h5 class="fw-bold text-dark mb-3">Order Status Distribution</h5>
+                        <div class="mx-auto" style="max-width: 280px;">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Services -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                        <h5 class="fw-bold text-dark mb-3">Most Popular Services</h5>
+                        <canvas id="popularServicesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Sellers -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                        <h5 class="fw-bold text-dark mb-3">Top Rated Sellers</h5>
+                        <canvas id="topSellersChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Load the parsed JSON data passed from backend
+        const chartData = {{ charts_data | safe }};
+        
+        // Color configuration
+        const colors = {
+            primary: '#2563eb',
+            secondary: '#818cf8',
+            emerald: '#10b981',
+            rose: '#f43f5e',
+            amber: '#f59e0b',
+            slate: '#64748b'
+        };
+
+        // 1. User & Service Registrations Chart (Double Line Chart)
+        const regLabels = chartData.registrations.labels;
+        const regValues = chartData.registrations.data;
+        const servValues = chartData.services.data;
+
+        new Chart(document.getElementById('registrationsChart'), {
+            type: 'line',
+            data: {
+                labels: regLabels,
+                datasets: [
+                    {
+                        label: 'User Signups',
+                        data: regValues,
+                        borderColor: colors.primary,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Services Posted',
+                        data: servValues,
+                        borderColor: colors.secondary,
+                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+
+        // 2. Order Status Chart (Doughnut Chart)
+        const statusLabels = chartData.order_status.labels;
+        const statusValues = chartData.order_status.data;
+
+        new Chart(document.getElementById('orderStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusValues,
+                    backgroundColor: [colors.amber, colors.primary, colors.emerald, colors.slate],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // 3. Most Popular Services Chart (Horizontal Bar Chart)
+        const popLabels = chartData.popular_services.labels;
+        const popValues = chartData.popular_services.data;
+
+        new Chart(document.getElementById('popularServicesChart'), {
+            type: 'bar',
+            data: {
+                labels: popLabels,
+                datasets: [{
+                    label: 'Bookings / Orders',
+                    data: popValues,
+                    backgroundColor: colors.emerald,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+
+        // 4. Top Rated Sellers Chart (Vertical Bar Chart)
+        const sellerLabels = chartData.top_sellers.labels;
+        const sellerValues = chartData.top_sellers.data;
+
+        new Chart(document.getElementById('topSellersChart'), {
+            type: 'bar',
+            data: {
+                labels: sellerLabels,
+                datasets: [{
+                    label: 'Seller Average Score (Stars)',
+                    data: sellerValues,
+                    backgroundColor: colors.amber,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 5,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

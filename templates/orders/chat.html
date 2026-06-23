@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Chat & Specifications - Broke Geniuses{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-messages-box {
+        height: 450px;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background-color: #f1f5f9;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    .chat-message-bubble {
+        max-width: 70%;
+        padding: 0.85rem 1.1rem;
+        border-radius: 18px;
+        margin-bottom: 1rem;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    }
+    .chat-bubble-sent {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-bottom-right-radius: 4px;
+        margin-left: auto;
+    }
+    .chat-bubble-received {
+        background-color: #ffffff;
+        color: var(--text-primary);
+        border-bottom-left-radius: 4px;
+        margin-right: auto;
+        border: 1px solid #e2e8f0;
+    }
+    .chat-meta {
+        font-size: 0.72rem;
+        opacity: 0.8;
+        margin-top: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade-in">
+    <!-- Breadcrumb / Header navigation -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <nav aria-label="breadcrumb" class="mb-0">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('profile.view_profile') }}" class="text-decoration-none text-primary">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Specifications Chat</li>
+            </ol>
+        </nav>
+        <a href="{{ url_for('profile.view_profile') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Side: Order/Gig info details summary card -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Order Information</h5>
+                
+                <div class="mb-4">
+                    <span class="text-muted small fw-semibold uppercase d-block">Service Listing</span>
+                    <h6 class="fw-bold text-dark mb-1">{{ order.service.title }}</h6>
+                    <span class="badge bg-light text-secondary border px-2 py-1 rounded" style="font-size: 0.72rem;">{{ order.service.university }}</span>
+                </div>
+
+                <div class="mb-4 row g-2">
+                    <div class="col-6">
+                        <span class="text-muted small fw-semibold d-block">Price / Value</span>
+                        <span class="fw-bold text-primary fs-5">₹{{ '{:,.2f}'.format(order.service.price) }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted small fw-semibold d-block">Order Status</span>
+                        {% if order.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill small">Pending</span>
+                        {% elif order.status == 'Accepted' %}
+                            <span class="badge bg-primary px-2.5 py-1.5 rounded-pill small">Accepted</span>
+                        {% elif order.status == 'Completed' %}
+                            <span class="badge bg-success px-2.5 py-1.5 rounded-pill small">Completed</span>
+                        {% else %}
+                            <span class="badge bg-secondary px-2.5 py-1.5 rounded-pill small">Cancelled</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- Participant card -->
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ url_for('static', filename='profile_pics/' + recipient.profile_pic) }}" alt="Avatar" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
+                    <div>
+                        <span class="text-muted small d-block">{% if current_user.id == order.buyer_id %}Seller{% else %}Buyer{% endif %}</span>
+                        <div class="fw-bold text-dark">{{ recipient.name }}</div>
+                        <div class="small text-muted">@{{ recipient.username }}</div>
+                    </div>
+                </div>
+                <div class="small text-muted mt-3">
+                    <i class="bi bi-info-circle me-1"></i> Use this thread to share files, links, or specify details for this order.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Chat Message Thread Room -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <h4 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-dots-fill text-primary"></i>Specifications Thread
+                </h4>
+
+                <!-- Chat history box -->
+                <div id="chat-messages-container" class="chat-messages-box mb-4">
+                    {% if messages %}
+                        {% for msg in messages %}
+                            {% set is_me = (msg.sender_id == current_user.id) %}
+                            <div class="d-flex mb-2 {% if is_me %}justify-content-end{% endif %}">
+                                <div class="chat-message-bubble {% if is_me %}chat-bubble-sent{% else %}chat-bubble-received{% endif %}">
+                                    <div class="small text-muted mb-1 fw-semibold" style="font-size: 0.72rem; {% if is_me %}color: rgba(255,255,255,0.85) !important;{% endif %}">
+                                        {% if is_me %}You{% else %}@{{ msg.sender.username }}{% endif %}
+                                    </div>
+                                    <div class="chat-text" style="white-space: pre-wrap; font-size: 0.9rem;">{{ msg.text }}</div>
+                                    <div class="chat-meta {% if is_me %}justify-content-end{% endif %}">
+                                        <i class="bi bi-clock"></i>
+                                        <span>{{ msg.created_at.strftime('%I:%M %p') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                            <i class="bi bi-chat-dots fs-1 mb-2"></i>
+                            <p class="mb-0">No messages in this chat yet.</p>
+                            <small>Start the thread by typing details below.</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Chat Input Form -->
+                <form action="{{ url_for('chat.send_message', order_id=order.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group">
+                        <textarea name="message_text" class="form-control" rows="2" placeholder="Describe specifications, share google drive links, or write notes..." required></textarea>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center px-4 fw-semibold">
+                            <i class="bi bi-send-fill me-2"></i>Send
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Auto-scroll chat box to bottom on page load
+        const chatBox = document.getElementById('chat-messages-container');
+        if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Broke Geniuses - Campus Gig Marketplace{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <!-- Hero Section -->
+    <section class="hero-gradient mb-5">
+        <div class="container text-center py-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-primary px-3 py-2 rounded-pill mb-3 fw-semibold">Campus Gig Marketplace</span>
+                    <h1 class="hero-title mb-3">By Students. For Students.</h1>
+                    <p class="lead text-light-emphasis fs-4 mb-4 text-secondary">
+                        Welcome to <strong>Broke Geniuses</strong>—the ultimate university-exclusive network where you can buy and sell notes, programming help, graphic designs, resume reviews, and custom services.
+                    </p>
+                    
+                    <!-- Search Input -->
+                    <form action="{{ url_for('service.browse_services') }}" method="GET" class="mb-4">
+                        <div class="input-group input-group-lg shadow-lg rounded-pill overflow-hidden max-width-md mx-auto" style="max-width: 600px;">
+                            <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="q" class="form-control border-0 py-3" placeholder="Search Python help, Resume review, Logo design...">
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">Search</button>
+                        </div>
+                    </form>
+                    
+                    <div class="d-flex justify-content-center gap-3 mt-2">
+                        <a href="{{ url_for('service.browse_services') }}" class="btn btn-primary btn-lg px-4 shadow-sm">Browse Marketplace</a>
+                        {% if not current_user.is_authenticated %}
+                            <a href="{{ url_for('auth.signup') }}" class="btn btn-outline-light btn-lg px-4 border-2">Join Your Campus</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Stats -->
+    <div class="container mb-5">
+        <div class="row text-center g-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-4 rounded-3 bg-white h-100">
+                    <div class="text-primary fs-1 mb-2"><i class="bi bi-people-fill"></i></div>
+                    <h3 class="fw-bold">1,200+</h3>
+                    <p class="text-muted mb-0 small uppercase">Active Students</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-4 rounded-3 bg-white h-100">
+                    <div class="text-indigo fs-1 mb-2"><i class="bi bi-patch-check-fill text-primary"></i></div>
+                    <h3 class="fw-bold">4.9/5</h3>
+                    <p class="text-muted mb-0 small uppercase">Satisfaction Score</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-4 rounded-3 bg-white h-100">
+                    <div class="text-success fs-1 mb-2"><i class="bi bi-shield-fill-check text-success"></i></div>
+                    <h3 class="fw-bold">100%</h3>
+                    <p class="text-muted mb-0 small uppercase">Safe Campus Deals</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-4 rounded-3 bg-white h-100">
+                    <div class="text-warning fs-1 mb-2"><i class="bi bi-currency-rupee text-warning"></i></div>
+                    <h3 class="fw-bold">₹0</h3>
+                    <p class="text-muted mb-0 small uppercase">Commission Fees</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Services Section -->
+    <section class="container mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Top Rated Campus Gigs</h2>
+                <p class="text-muted mb-0">Highly rated services offered by verified university students.</p>
+            </div>
+            <a href="{{ url_for('service.browse_services') }}" class="btn btn-outline-primary fw-medium rounded-pill">View All Services <i class="bi bi-arrow-right-short"></i></a>
+        </div>
+
+        <div class="row g-4">
+            {% if featured_services %}
+                {% for service in featured_services %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card service-card">
+                            <div class="service-card-img-wrapper">
+                                <span class="service-badge-uni">{{ service.university }}</span>
+                                {% if service.seller.is_demo %}
+                                    <span class="service-badge-demo">Demo</span>
+                                {% endif %}
+                                <img src="{{ url_for('static', filename='service_images/' + service.image) }}" alt="{{ service.title }}" class="service-card-img">
+                            </div>
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ url_for('static', filename='profile_pics/' + service.seller.profile_pic) }}" alt="Avatar" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <span class="small fw-semibold text-dark">{{ service.seller.username }}</span>
+                                        {% if service.seller.is_top_rated %}
+                                            <span class="badge bg-warning text-dark px-2 rounded-pill" style="font-size: 0.65rem;">Top Rated</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <h5 class="card-title fw-bold text-dark mb-2 text-truncate-2" style="height: 48px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                    <a href="{{ url_for('service.service_detail', service_id=service.id) }}" class="text-decoration-none text-dark hover-primary">{{ service.title }}</a>
+                                </h5>
+                                <p class="card-text small text-muted text-truncate-3 mb-4" style="height: 60px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+                                    {{ service.description }}
+                                </p>
+                                <div class="mt-auto border-top pt-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <span class="service-card-price">₹{{ '{:,.2f}'.format(service.price) }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        {{ service.total_rating|star_rating|safe }}
+                                        <span class="small text-muted">({{ service.review_count }})</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5">
+                    <div class="text-muted fs-1 mb-2"><i class="bi bi-emoji-frown"></i></div>
+                    <p class="lead">No active services right now. Be the first to list yours!</p>
+                    <a href="{{ url_for('service.post_service') }}" class="btn btn-primary px-4 mt-2">Post a Service</a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Why Us Section -->
+    <section class="bg-dark text-light py-5 rounded-5 mx-2 mx-md-5 my-5">
+        <div class="container py-4 px-4">
+            <h2 class="text-center fw-bold mb-5 text-white">How Broke Geniuses Works</h2>
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 70px; height: 70px;">
+                        <i class="bi bi-person-badge-fill fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">1. List Your Campus Skill</h5>
+                    <p class="small text-muted-light">Tutoring, design, notes sharing—list whatever skills you have. It takes less than 2 minutes to create a listing.</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 70px; height: 70px;">
+                        <i class="bi bi-cart-check-fill fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">2. Hire Peer Students</h5>
+                    <p class="small text-muted-light">Search, filter by college or budget, and book instantly. Since it's student-only, prices are tailored to a student budget.</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 70px; height: 70px;">
+                        <i class="bi bi-emoji-laughing-fill fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">3. Deal Done & Review</h5>
+                    <p class="small text-muted-light">Once the work is done, mark the order complete and give a rating. Add a review meme to keep things fun!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

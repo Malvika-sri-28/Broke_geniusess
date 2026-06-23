@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Users - Admin Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-5 py-5 animate-fade-in">
+    <div class="row">
+        <!-- Admin Nav Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-shield-lock-fill text-danger me-2"></i>Admin Menu</h4>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-speedometer2 me-2"></i>Overview Analytics
+                    </a>
+                    <a href="{{ url_for('admin.users_list') }}" class="list-group-item list-group-item-action active border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-people-fill me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.services_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2 mb-1">
+                        <i class="bi bi-grid-fill me-2"></i>Manage Services
+                    </a>
+                    <a href="{{ url_for('admin.reviews_list') }}" class="list-group-item list-group-item-action border-0 rounded-3 py-2">
+                        <i class="bi bi-chat-left-text-fill me-2"></i>Manage Reviews
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Column -->
+        <div class="col-lg-9">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h2 class="fw-bold text-dark mb-0">Platform User Accounts</h2>
+                <span class="badge bg-primary px-3 py-2 rounded-pill">{{ users|length }} Total Users</span>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>University</th>
+                                    <th>Created At</th>
+                                    <th>Badges</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img src="{{ url_for('static', filename='profile_pics/' + u.profile_pic) }}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <div>
+                                                    <div class="fw-bold text-dark">{{ u.name }}</div>
+                                                    <div class="small text-muted">@{{ u.username }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ u.email }}</td>
+                                        <td><span class="small fw-semibold text-secondary">{{ u.university }}</span></td>
+                                        <td><span class="small text-muted">{{ u.created_at.strftime('%d-%b-%Y') }}</span></td>
+                                        <td>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                {% if u.is_admin %}
+                                                    <span class="badge bg-danger" style="font-size: 0.68rem;">Admin</span>
+                                                {% endif %}
+                                                {% if u.is_top_rated %}
+                                                    <span class="badge bg-warning text-dark" style="font-size: 0.68rem;">Top Rated</span>
+                                                {% endif %}
+                                                {% if not u.is_admin and not u.is_top_rated %}
+                                                    <span class="badge bg-light text-secondary border" style="font-size: 0.68rem;">Student</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            {% if u.id == current_user.id %}
+                                                <span class="text-muted small italic">Logged In</span>
+                                            {% else %}
+                                                <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" class="delete-confirm-form" data-item-type="user account">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                                        <i class="bi bi-trash-fill"></i> Delete
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 mb-2"></i>
+                        <p>No user accounts found.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
