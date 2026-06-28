@@ -4,6 +4,12 @@
 
 ---
 
+## Live demo website link
+https://broke-geniuses.onrender.com
+
+## Repository link
+https://github.com/Malvika-sri-28/Broke_geniusess.git
+
 ## 🌟 Core Features
 
 ### 1. Campus Peer Marketplace
