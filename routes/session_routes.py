@@ -6,12 +6,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from database import db, Order, SessionRoom
 from werkzeug.utils import secure_filename
-
-try:
-    import stripe
-except ImportError:
-    stripe = None
-
 session_bp = Blueprint('session', __name__)
 
 SESSION_ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'zip', 'png', 'jpg', 'jpeg', 'webp'}
@@ -414,8 +408,6 @@ def view_package(order_id):
                 'url': file_url
             })
             
-    stripe_enabled = bool(current_app.config.get('STRIPE_SECRET_KEY')) and (stripe is not None)
-    
     return render_template(
         'sessions/package.html',
         order=order,
@@ -423,9 +415,7 @@ def view_package(order_id):
         quiz_list=quiz_list,
         show_locked=show_locked,
         is_seller=is_seller,
-        shared_files=shared_files,
-        stripe_enabled=stripe_enabled,
-        stripe_public_key=current_app.config.get('STRIPE_PUBLIC_KEY', '')
+        shared_files=shared_files
     )
 
 
@@ -490,104 +480,3 @@ def upload_file(order_id):
         'url': file_url
     })
 
-
-@session_bp.route('/orders/<int:order_id>/session/create-checkout', methods=['POST'])
-@login_required
-def create_checkout(order_id):
-    order = Order.query.get_or_404(order_id)
-    if order.buyer_id != current_user.id:
-        flash("Only the buyer can purchase this package.", "danger")
-        return redirect(url_for('session.view_package', order_id=order.id))
-        
-    if not stripe or not current_app.config.get('STRIPE_SECRET_KEY'):
-        flash("Stripe payment gateway is not configured on this server.", "warning")
-        return redirect(url_for('session.view_package', order_id=order.id))
-        
-    stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
-    
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'inr',
-                    'product_data': {
-                        'name': f"Study Package - {order.service.title}",
-                        'description': f"AI-generated study materials for your tutoring session on Order #{order.id}.",
-                    },
-                    'unit_amount': 10000, # ₹100.00 in paise
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=url_for('session.payment_success', order_id=order.id, _external=True),
-            cancel_url=url_for('session.view_package', order_id=order.id, _external=True),
-            metadata={
-                'order_id': str(order.id),
-                'buyer_id': str(current_user.id)
-            }
-        )
-        return redirect(checkout_session.url, code=303)
-    except Exception as e:
-        print("Stripe Checkout Error:", e)
-        flash("Failed to generate payment session. Please try again.", "danger")
-        return redirect(url_for('session.view_package', order_id=order.id))
-
-
-@session_bp.route('/orders/<int:order_id>/session/success', methods=['GET'])
-@login_required
-def payment_success(order_id):
-    order = Order.query.get_or_404(order_id)
-    if order.buyer_id != current_user.id:
-        flash("Unauthorized action.", "danger")
-        return redirect(url_for('profile.view_profile'))
-        
-    session_room = SessionRoom.query.filter_by(order_id=order.id).first()
-    if session_room:
-        session_room.is_paid = True
-        session_room.is_locked = False
-        db.session.commit()
-        flash("Payment completed successfully! Your study materials are unlocked.", "success")
-        
-    return redirect(url_for('session.view_package', order_id=order.id))
-
-
-@session_bp.route('/stripe-webhook', methods=['POST'])
-def stripe_webhook():
-    if not stripe:
-        return 'Stripe not installed', 400
-        
-    payload = request.data
-    sig_header = request.headers.get('STRIPE_SIGNATURE')
-    webhook_secret = current_app.config.get('STRIPE_WEBHOOK_SECRET')
-    
-    if not sig_header or not webhook_secret:
-        return 'Signature or Secret missing', 400
-        
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
-        )
-    except ValueError as e:
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError as e:
-        return 'Invalid signature', 400
-
-    if event['type'] == 'checkout.session.completed':
-        session_obj = event['data']['object']
-        metadata = session_obj.get('metadata', {})
-        order_id_str = metadata.get('order_id')
-        
-        if order_id_str:
-            try:
-                order_id = int(order_id_str)
-                session_room = SessionRoom.query.filter_by(order_id=order_id).first()
-                if session_room:
-                    session_room.is_paid = True
-                    session_room.is_locked = False
-                    db.session.commit()
-            except Exception as e:
-                print("Webhook DB Update Error:", e)
-                return 'DB Update Error', 500
-                
-    return 'Success', 200

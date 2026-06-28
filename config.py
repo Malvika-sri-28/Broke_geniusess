@@ -23,11 +23,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'broke_geniuses.db')}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Stripe Keys
-    STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY')
-    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
-    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
-    
+
     # Upload Configurations
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static')
     PROFILE_PICS_DIR = os.path.join(UPLOAD_FOLDER, 'profile_pics')
